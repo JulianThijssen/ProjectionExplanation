@@ -43,6 +43,7 @@ ScatterplotPlugin::ScatterplotPlugin(const PluginFactory* factory) :
     _positions(),
     _numPoints(0),
     _scatterPlotWidget(new ScatterplotWidget()),
+    _explanationWidget(new ExplanationWidget()),
     _dropWidget(nullptr),
     _settingsAction(this)
 {
@@ -184,6 +185,7 @@ void ScatterplotPlugin::init()
     layout->setSpacing(0);
     layout->addWidget(_settingsAction.createWidget(this));
     layout->addWidget(_scatterPlotWidget, 100);
+    layout->addWidget(_explanationWidget);
 
     auto bottomToolbarWidget = new QWidget();
     auto bottomToolbarLayout = new QHBoxLayout();
@@ -238,12 +240,20 @@ void ScatterplotPlugin::init()
 
 void ScatterplotPlugin::onDataEvent(hdps::DataEvent* dataEvent)
 {
-    //if (dataEvent->getType() == EventType::DataSelectionChanged)
-    //{
-    //    if (dataEvent->getDataset() == _positionDataset)
-    //    {
-    //        if (_positionDataset->isDerivedData())
-    //        {
+    if (dataEvent->getType() == EventType::DataSelectionChanged)
+    {
+        if (dataEvent->getDataset() == _positionDataset)
+        {
+            if (_positionDataset->isDerivedData())
+            {
+                hdps::Dataset<Points> sourceDataset = _positionDataset->getSourceDataset<Points>();
+                hdps::Dataset<Points> selection = sourceDataset->getSelection();
+
+                Eigen::ArrayXXi dimRanking;
+                _explanation.computeDimensionRanking(dimRanking, selection->indices);
+
+                _explanationWidget->setRanking(dimRanking);
+
     //            hdps::Dataset<Points> sourceDataset = _positionDataset->getSourceDataset<Points>();
     //            hdps::Dataset<Points> selection = sourceDataset->getSelection();
     //            int numPoints = selection->indices.size();
@@ -439,9 +449,9 @@ void ScatterplotPlugin::onDataEvent(hdps::DataEvent* dataEvent)
     //            //    image.save(QString("eigImage%1.png").arg(i));
     //            //}
     //            std::cout << "Saved eigen vectors" << std::endl;
-    //        }
-    //    }
-    //}
+            }
+        }
+    }
 }
 
 void ScatterplotPlugin::loadData(const Datasets& datasets)
@@ -621,6 +631,8 @@ void ScatterplotPlugin::positionDatasetChanged()
         topRankedDims[i] = dimRanking(i, 0);
     rankingDataset->setData(topRankedDims.data(), dimRanking.rows(), 1);
     _core->notifyDataAdded(rankingDataset);
+
+    _explanationWidget->setRanking(dimRanking);
 
     // Update the window title to reflect the position dataset change
     updateWindowTitle();
