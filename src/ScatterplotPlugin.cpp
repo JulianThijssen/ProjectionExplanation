@@ -183,19 +183,27 @@ void ScatterplotPlugin::init()
 
     layout->setMargin(0);
     layout->setSpacing(0);
-    layout->addWidget(_settingsAction.createWidget(this));
-    layout->addWidget(_scatterPlotWidget, 100);
-    layout->addWidget(_explanationWidget);
+    auto settingsWidget = _settingsAction.createWidget(this);
+    settingsWidget->setMaximumHeight(40);
+    layout->addWidget(settingsWidget);
+
+    auto centralWidget = new QWidget();
+    centralWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    auto centralLayout = new QHBoxLayout();
+    centralLayout->addWidget(_scatterPlotWidget);
+    centralLayout->addWidget(_explanationWidget);
+    centralWidget->setLayout(centralLayout);
+    layout->addWidget(centralWidget);
 
     auto bottomToolbarWidget = new QWidget();
     auto bottomToolbarLayout = new QHBoxLayout();
 
     bottomToolbarWidget->setAutoFillBackground(true);
     bottomToolbarWidget->setLayout(bottomToolbarLayout);
-
+    bottomToolbarWidget->setMaximumHeight(40);
     bottomToolbarLayout->setMargin(4);
     bottomToolbarLayout->addWidget(_settingsAction.getPlotAction().getPointPlotAction().getFocusSelection().createWidget(this));
-    bottomToolbarLayout->addStretch(1);
+    bottomToolbarLayout->addStretch(0);
     bottomToolbarLayout->addWidget(_settingsAction.getExportAction().createWidget(this));
     bottomToolbarLayout->addWidget(_settingsAction.getMiscellaneousAction().createCollapsedWidget(this));
 
@@ -249,10 +257,12 @@ void ScatterplotPlugin::onDataEvent(hdps::DataEvent* dataEvent)
                 hdps::Dataset<Points> sourceDataset = _positionDataset->getSourceDataset<Points>();
                 hdps::Dataset<Points> selection = sourceDataset->getSelection();
 
-                Eigen::ArrayXXi dimRanking;
-                _explanation.computeDimensionRanking(dimRanking, selection->indices);
+                Eigen::ArrayXXf dimRanking;
+                _explanation.computeDimensionRanks(dimRanking, selection->indices);
 
                 _explanationWidget->setRanking(dimRanking);
+
+                _explanationWidget->update();
 
     //            hdps::Dataset<Points> sourceDataset = _positionDataset->getSourceDataset<Points>();
     //            hdps::Dataset<Points> selection = sourceDataset->getSelection();
@@ -632,7 +642,7 @@ void ScatterplotPlugin::positionDatasetChanged()
     rankingDataset->setData(topRankedDims.data(), dimRanking.rows(), 1);
     _core->notifyDataAdded(rankingDataset);
 
-    _explanationWidget->setRanking(dimRanking);
+    //_explanationWidget->setRanking(dimRanking);
 
     // Update the window title to reflect the position dataset change
     updateWindowTitle();
