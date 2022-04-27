@@ -199,7 +199,10 @@ void ScatterplotPlugin::init()
 
     auto centralWidget = new QWidget();
     centralWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    centralWidget->setContentsMargins(0, 0, 0, 0);
     auto centralLayout = new QHBoxLayout();
+    centralLayout->setMargin(0);
+    centralLayout->setSpacing(0);
     centralLayout->addWidget(_scatterPlotWidget);
     centralLayout->addWidget(_explanationWidget);
     centralWidget->setLayout(centralLayout);
@@ -211,7 +214,8 @@ void ScatterplotPlugin::init()
     bottomToolbarWidget->setAutoFillBackground(true);
     bottomToolbarWidget->setLayout(bottomToolbarLayout);
     bottomToolbarWidget->setMaximumHeight(40);
-    bottomToolbarLayout->setMargin(4);
+    bottomToolbarWidget->setContentsMargins(0, 0, 0, 0);
+    bottomToolbarLayout->setMargin(0);
     bottomToolbarLayout->addWidget(_settingsAction.getPlotAction().getPointPlotAction().getFocusSelection().createWidget(this));
     bottomToolbarLayout->addStretch(0);
     bottomToolbarLayout->addWidget(_settingsAction.getExportAction().createWidget(this));
@@ -342,7 +346,7 @@ void ScatterplotPlugin::colorPointsByRanking()
 
     hdps::Dataset<Points> sourceDataset = _positionDataset->getSourceDataset<Points>();
     hdps::Dataset<Points> selection = sourceDataset->getSelection();
-    _explanationWidget->getBarchart().setRanking(dimRanking, selection->indices);
+    //_explanationWidget->getBarchart().setRanking(dimRanking, selection->indices);
 
     std::vector<float> confidences = _explanationModel.computeConfidences(dimRanking);
 
@@ -555,6 +559,8 @@ void ScatterplotPlugin::positionDatasetChanged()
     _explanationModel.recomputeNeighbourhood(0.1f);
 
     colorPointsByRanking();
+
+    _explanationWidget->getBarchart().update();
 
     // Update the window title to reflect the position dataset change
     updateWindowTitle();
@@ -876,7 +882,7 @@ bool ScatterplotPlugin::eventFilter(QObject* target, QEvent* event)
     {
         auto wheelEvent = static_cast<QWheelEvent*>(event);
 
-        _selectionRadius += wheelEvent->angleDelta().y() > 0 ? 2 : -2;
+        _selectionRadius += wheelEvent->angleDelta().y() > 0 ? 3 : -3;
         if (_selectionRadius < 2) _selectionRadius = 2;
 
         _scatterPlotWidget->setCurrentPosition(_lastMousePos, _selectionRadius);
